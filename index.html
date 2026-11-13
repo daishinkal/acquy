@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a1626">
+<title>Bảo vệ ắc quy</title>
+<style>
+  :root{--bg:#0a1626;--panel:#13243b;--text:#eef3fa;--muted:#8fa3bd;--line:#223653;--ok:#35e0a1;--bad:#ff6b5e;--warn:#ffb347}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);
+    background:radial-gradient(900px 500px at 50% -120px,#1c3b66 0%,var(--bg) 62%) fixed,var(--bg);display:flex;justify-content:center;padding:22px 14px 32px}
+  main{width:100%;max-width:480px}
+  h1{font-size:24px;margin:0 0 6px}
+  .sub{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:0 0 16px}
+  .sub::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+  .sub.live::before{background:var(--ok);box-shadow:0 0 0 4px rgba(53,224,161,.18)}
+  .sub.bad{color:var(--bad);font-weight:600}
+  .sub.bad::before{background:var(--bad);box-shadow:0 0 0 4px rgba(255,107,94,.2)}
+  .hero{--h1:#35e0a1;--h2:#1fb6d4;border-radius:22px;padding:20px 22px;margin-bottom:12px;color:#03231a;
+    background:linear-gradient(135deg,var(--h1),var(--h2));box-shadow:0 10px 30px rgba(31,182,212,.25)}
+  .hero.warn{--h1:#ffd23f;--h2:#ff9f1c;color:#241600}
+  .hero.cut{--h1:#ff8a7a;--h2:#e5484d;color:#2a0507}
+  .hero .k{font-size:15px;font-weight:600;opacity:.75;margin-bottom:6px}
+  .big{font-size:68px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .unit{font-size:26px;font-weight:700;opacity:.7}
+  .state{display:inline-block;margin-top:12px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.18);font-weight:700;font-size:15px}
+  .alert{border-radius:12px;padding:10px 14px;margin-bottom:12px;background:rgba(255,107,94,.15);border:1px solid var(--bad);color:#ffd3ce;font-size:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{--c:#7aa7ff;border-radius:14px;padding:14px 14px 14px 16px;border:1px solid var(--line);border-left:5px solid var(--c);
+    background:var(--panel);background:color-mix(in srgb,var(--c) 14%,var(--panel))}
+  .wide{grid-column:1/-1}
+  .k{font-size:13px;color:var(--muted);margin-bottom:4px}
+  .card .k{color:color-mix(in srgb,var(--c) 55%,#fff)}
+  .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+  .n small{font-size:15px;font-weight:500;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;min-height:16px}
+  .chart{--c:#35e0a1;margin-bottom:12px}
+  .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .chead b{font-size:16px;color:#b8f5dc}
+  .rng{display:flex;gap:6px}
+  .rng button{width:auto;margin:0;font-size:13px;padding:5px 10px;border-radius:8px;font-weight:600;background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .rng button.on{background:#35e0a1;color:#04231a;border-color:#35e0a1}
+  .cwrap{position:relative;height:200px;margin-top:10px}
+  #cv{width:100%;height:100%;display:block;touch-action:pan-y}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+  input{width:100%;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0d1c30;color:var(--text);margin-bottom:12px}
+  button{width:100%;font-size:17px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#35e0a1,#1fb6d4);color:#04231a;font-weight:700;cursor:pointer}
+  button.secondary{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:500;font-size:14px;padding:9px;margin-top:16px}
+  button:focus-visible,input:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
+  #err{color:var(--bad);font-size:14px;min-height:20px;margin:8px 0 0}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bảo vệ ắc quy</h1>
+
+  <section id="login" class="panel">
+    <label for="em">Email</label>
+    <input id="em" type="email" autocomplete="username">
+    <label for="pw">Mật khẩu</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <button id="btnLogin">Đăng nhập</button>
+    <p id="err" role="alert"></p>
+  </section>
+
+  <section id="app" class="hidden">
+    <p id="age" class="sub">Đang chờ dữ liệu…</p>
+    <div id="alerts"></div>
+    <div class="hero" id="hero">
+      <div class="k">Điện áp ắc quy</div>
+      <div class="big"><span id="vbat">--</span> <span class="unit">V</span></div>
+      <div class="state" id="state">Đang chờ dữ liệu</div>
+    </div>
+    <div class="card chart">
+      <div class="chead">
+        <b>Biểu đồ điện áp</b>
+        <div class="rng" id="rng">
+          <button data-m="1">1 phút</button><button data-m="5">5 phút</button><button data-m="15" class="on">15 phút</button><button data-m="60">1 giờ</button>
+        </div>
+      </div>
+      <div class="cwrap"><canvas id="cv"></canvas></div>
+      <div class="hint" id="tip">Chạm hoặc rê chuột vào biểu đồ để xem từng điểm. Nét đứt đỏ là ngưỡng ngắt tải, nét đứt xanh là ngưỡng cấp lại.</div>
+    </div>
+    <div class="grid">
+      <div class="card" style="--c:#ff5d5d"><div class="k">Nhiệt độ</div><div class="n"><span id="temp">--</span> <small>°C</small></div><div class="hint" id="temphint"></div></div>
+      <div class="card" style="--c:#ffb347"><div class="k">Ngưỡng ngắt / cấp lại</div><div class="n"><span id="thr">--</span> <small>V</small></div></div>
+      <div class="card wide" style="--c:#b794ff"><div class="k">Công tắc hẹn giờ</div><div class="n"><span id="dev">--</span></div><div class="hint" id="sch"></div></div>
+      <div class="card" style="--c:#4da3ff"><div class="k">Đo tụ gần nhất</div><div class="n" style="font-size:20px"><span id="cap">--</span></div></div>
+      <div class="card" style="--c:#2fd6ee"><div class="k">Sóng Wi-Fi</div><div class="n"><span id="rssi">--</span> <small>dBm</small></div></div>
+      <div class="card wide" style="--c:#8fa3bd"><div class="k">Thiết bị</div><div class="n" style="font-size:18px"><span id="info">--</span></div></div>
+    </div>
+    <button id="btnLogout" class="secondary">Đăng xuất</button>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+    from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+  import { getDatabase, ref, onValue }
+    from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+
+  // <-- SUA: dán thông tin của project Firebase (Project settings > General > Your apps > firebaseConfig)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAhmR158tGYpH2MMvVA1XpSyY8g8HuaEzw",
+    authDomain: "thiet-bi-giam-sat-dien.firebaseapp.com",
+    databaseURL: "https://thiet-bi-giam-sat-dien-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "thiet-bi-giam-sat-dien",
+    appId: "1:651540252995:web:05a1ceff68ca063c4ac7f6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const $ = id => document.getElementById(id);
+  let unsub = null, lastTs = 0, lastRecv = 0, timer = null, ref2 = { cut: 11.2, rec: 13.0 };
+  const fmt = (x, d) => (x === null || x === undefined) ? "--" : Number(x).toFixed(d);
+
+  // ---- Biểu đồ điện áp ----
+  const HKEY = "vHist", KEEP = 3660000;
+  let hist = [], rangeMs = 900000, hover = null, chartGeo = null;
+  try { hist = JSON.parse(localStorage.getItem(HKEY) || "[]").filter(a => Array.isArray(a) && a.length === 2); } catch (e) { hist = []; }
+  function addPoint(v) {
+    if (v === null || v === undefined || isNaN(Number(v))) return;
+    const now = Date.now();
+    hist.push([now, Number(v)]);
+    while (hist.length && hist[0][0] < now - KEEP) hist.shift();
+    try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) {}
+    drawChart();
+  }
+  function drawChart() {
+    const cv = $("cv");
+    if (!cv || !cv.clientWidth) return;
+    const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const now = Date.now(), t0 = now - rangeMs, pts = hist.filter(a => a[0] >= t0);
+    let lo = ref2.cut, hi = ref2.rec;
+    pts.forEach(a => { if (a[1] < lo) lo = a[1]; if (a[1] > hi) hi = a[1]; });
+    lo = Math.floor((lo - 0.3) * 2) / 2; hi = Math.ceil((hi + 0.3) * 2) / 2;
+    const L = 42, R = 8, T = 8, B = 20, pw = W - L - R, ph = H - T - B;
+    const X = t => L + (t - t0) / rangeMs * pw, Y = v => T + ph - (v - lo) / (hi - lo) * ph;
+    c.font = "11px system-ui,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+    for (let k = 0; k <= 4; k++) {
+      const v = lo + (hi - lo) * k / 4, y = Y(v);
+      c.strokeStyle = "rgba(255,255,255,.08)"; c.beginPath(); c.moveTo(L, y); c.lineTo(W - R, y); c.stroke();
+      c.fillStyle = "#8fa3bd"; c.fillText(v.toFixed(1), L - 6, y);
+    }
+    [[ref2.cut, "#ff6b5e"], [ref2.rec, "#35e0a1"]].forEach(([v, col]) => {
+      c.setLineDash([6, 5]); c.strokeStyle = col; c.lineWidth = 1.2; c.beginPath(); c.moveTo(L, Y(v)); c.lineTo(W - R, Y(v)); c.stroke(); c.setLineDash([]);
+    });
+    c.textBaseline = "alphabetic"; c.textAlign = "left"; c.fillStyle = "#8fa3bd";
+    c.fillText("-" + (rangeMs / 60000) + " phút", L, H - 4);
+    c.textAlign = "right"; c.fillText("bây giờ", W - R, H - 4);
+    const segs = []; let cur = [];
+    pts.forEach(a => { if (cur.length && a[0] - cur[cur.length - 1][0] > 90000) { segs.push(cur); cur = []; } cur.push(a); });
+    if (cur.length) segs.push(cur);
+    segs.forEach(sg => {
+      if (sg.length > 1) {
+        c.beginPath(); sg.forEach((a, n) => n ? c.lineTo(X(a[0]), Y(a[1])) : c.moveTo(X(a[0]), Y(a[1])));
+        c.strokeStyle = "#35e0a1"; c.lineWidth = 2.2; c.lineJoin = "round"; c.stroke();
+      }
+    });
+    for (let n = 1; n < segs.length; n++) {      // nối đoạn bị đứt bằng nét đứt
+      const e1 = segs[n - 1][segs[n - 1].length - 1], s1 = segs[n][0];
+      c.beginPath(); c.setLineDash([5, 5]); c.moveTo(X(e1[0]), Y(e1[1])); c.lineTo(X(s1[0]), Y(s1[1]));
+      c.strokeStyle = "rgba(53,224,161,.55)"; c.lineWidth = 1.8; c.stroke(); c.setLineDash([]);
+    }
+    if (pts.length <= 60) { c.fillStyle = "#35e0a1"; pts.forEach(a => { c.beginPath(); c.arc(X(a[0]), Y(a[1]), 2.6, 0, 7); c.fill(); }); }
+    if (hover && hover[0] >= t0) {
+      const x = X(hover[0]), y = Y(hover[1]);
+      c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 1; c.beginPath(); c.moveTo(x, T); c.lineTo(x, T + ph); c.stroke();
+      c.fillStyle = "#fff"; c.beginPath(); c.arc(x, y, 5, 0, 7); c.fill(); c.strokeStyle = "#35e0a1"; c.lineWidth = 2; c.stroke();
+    }
+    chartGeo = { pts, X };
+  }
+  function pick(e) {
+    if (!chartGeo || !chartGeo.pts.length) return;
+    const x = e.clientX - $("cv").getBoundingClientRect().left;
+    let best = null, bd = 1e9;
+    chartGeo.pts.forEach(a => { const d = Math.abs(chartGeo.X(a[0]) - x); if (d < bd) { bd = d; best = a; } });
+    hover = best;
+    $("tip").textContent = new Date(best[0]).toLocaleTimeString("vi-VN") + " · " + best[1].toFixed(2) + " V";
+    drawChart();
+  }
+  $("cv").addEventListener("pointermove", pick);
+  $("cv").addEventListener("pointerdown", pick);
+  $("cv").addEventListener("pointerleave", () => { hover = null; drawChart(); });
+  $("rng").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    rangeMs = Number(b.dataset.m) * 60000; hover = null;
+    document.querySelectorAll("#rng button").forEach(x => x.classList.toggle("on", x === b));
+    drawChart();
+  });
+  window.addEventListener("resize", drawChart);
+
+  function showAge() {
+    const el = $("age");
+    if (!lastRecv) { el.textContent = "Đang chờ dữ liệu…"; el.className = "sub"; return; }
+    const age = lastTs ? Math.max(0, Math.round(Date.now() / 1000 - lastTs)) : Math.round((Date.now() - lastRecv) / 1000);
+    if (age > 90) { el.textContent = "Thiết bị mất kết nối, số cuối cách đây " + Math.round(age / 60) + " phút"; el.className = "sub bad"; }
+    else { el.textContent = "Cập nhật " + age + " giây trước"; el.className = "sub live"; }
+  }
+  function upText(s) {
+    s = Number(s) || 0;
+    const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return (d ? d + " ngày " : "") + h + " giờ " + m + " phút";
+  }
+
+  function render(d) {
+    const v = Number(d.vbat), cut = Number(d.cut) === 1;
+    ref2 = { cut: Number(d.cutoff) || 11.2, rec: Number(d.reconnect) || 13.0 };
+    $("vbat").textContent = fmt(d.vbat, 2);
+    const hero = $("hero"), st = $("state");
+    hero.className = "hero" + (cut ? " cut" : (v < ref2.cut + 0.5 ? " warn" : ""));
+    st.textContent = cut ? (Number(d.tcut) === 1 ? "ĐÃ NGẮT TẢI (quá nhiệt)" : "ĐÃ NGẮT TẢI (áp thấp)") : "ĐANG CẤP TẢI";
+    const al = [];
+    if (Number(d.adc) === 1) al.push("Đo áp bất thường: tín hiệu ADC vượt thang đo.");
+    if (Number(d.adc) === 2) al.push("Đo áp bất thường: ADC gần 0 V (nghi đứt dây hoặc mất cầu chia áp).");
+    if (Number(d.tst) === 4) al.push("Mất cảm biến nhiệt độ (tải được giữ ngắt để an toàn).");
+    $("alerts").innerHTML = al.map(t => '<div class="alert">' + t + '</div>').join("");
+    $("temp").textContent = fmt(d.temp, 1);
+    $("temphint").textContent = Number(d.tst) === 1 ? "Chưa có cảm biến" : (Number(d.tst) === 4 ? "Mất cảm biến" : "Ngắt tải khi trên " + fmt(d.tmax, 0) + " °C");
+    $("thr").textContent = fmt(d.cutoff, 1) + " / " + fmt(d.reconnect, 1);
+    $("dev").textContent = Number(d.sch) === 1 ? (Number(d.dev) === 1 ? "ĐANG BẬT" : "ĐANG TẮT") : "Chưa bật hẹn giờ";
+    $("sch").textContent = Number(d.sch) === 1 ? "Bật lúc " + (d.on || "--") + " · Tắt lúc " + (d.off || "--") : "";
+    $("cap").textContent = d.cap || "--";
+    $("rssi").textContent = fmt(d.rssi, 0);
+    $("info").textContent = "v" + (d.ver || "?") + " · chạy " + upText(d.up);
+  }
+
+  $("btnLogin").addEventListener("click", async () => {
+    $("err").textContent = "";
+    try { await signInWithEmailAndPassword(auth, $("em").value.trim(), $("pw").value); }
+    catch (e) { $("err").textContent = "Sai email hoặc mật khẩu, hoặc tên miền này chưa được thêm vào Authorized domains."; }
+  });
+  $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin").click(); });
+  $("btnLogout").addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, user => {
+    $("login").classList.toggle("hidden", !!user);
+    $("app").classList.toggle("hidden", !user);
+    if (unsub) { unsub(); unsub = null; }
+    clearInterval(timer);
+    if (!user) return;
+    unsub = onValue(ref(db, "acquy"), s => {
+      const d = s.val();
+      if (!d) return;
+      lastTs = d.ts || 0; lastRecv = Date.now();
+      render(d);
+      addPoint(d.vbat);
+      showAge();
+    });
+    timer = setInterval(() => { showAge(); drawChart(); }, 5000);
+  });
+</script>
+</body>
+</html>
